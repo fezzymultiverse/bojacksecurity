@@ -3,10 +3,11 @@
   "version": "0.6.34",
   "description": "Bojack Secures",
   "dependencies": {
-    "@capacitor/android": "^6.0.0",
-    "@capacitor/core": "^6.0.0"
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/filesystem": "^8.1.5"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.0.0"
+    "@capacitor/cli": "^8.0.0"
   }
 }

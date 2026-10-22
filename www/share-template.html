@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src blob: data:; media-src blob:; connect-src data:">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#000000"><title>Encrypted file · Bojack Secures</title>
+<style>
+:root{--bg:#000;--panel:#0d0814;--line:#2a1442;--p:#b026ff;--p2:#d58bff;--txt:#efe7f7;--mut:#8d7aa3;--bad:#ff4d6d;--ok:#4dffb0;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--txt);font:16px/1.45 system-ui,sans-serif}
+body{display:flex;flex-direction:column;align-items:center;padding:max(24px,env(safe-area-inset-top)) 18px max(24px,env(safe-area-inset-bottom))}
+main{width:100%;max-width:460px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.logo{filter:drop-shadow(0 0 14px rgba(176,38,255,.7));margin-top:18px}
+@media(prefers-reduced-motion:no-preference){.logo{animation:glow 3s ease-in-out infinite alternate}@keyframes glow{to{filter:drop-shadow(0 0 26px rgba(176,38,255,1))}}}
+h1{margin:6px 0 0;font-size:26px;font-weight:600;letter-spacing:.5px}
+.slogan{margin:0;color:var(--p2);font-size:15px;letter-spacing:.4px}
+.sub{color:var(--mut);margin:6px 0 4px}
+.box{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 0 22px rgba(176,38,255,.12)}
+input{width:100%;font:inherit;color:inherit;background:#000;border:1px solid var(--line);border-radius:12px;padding:14px;margin:6px 0}
+input:focus-visible,button:focus-visible{outline:2px solid var(--p2);outline-offset:2px}
+button{font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 16px;cursor:pointer;width:100%;margin-top:8px}
+button:active{border-color:var(--p)}button.pri{background:var(--p);border-color:var(--p);color:#000;font-weight:700}
+button:disabled{opacity:.55;cursor:not-allowed}
+#msg{min-height:22px;color:var(--bad);font-size:14px;margin:4px 0}
+.row{display:flex;gap:8px}.row button{margin-top:8px}
+dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:12px 0 0;text-align:left;font-size:14px}
+dt{color:var(--mut)}dd{margin:0;word-break:break-word}
+.ok{color:var(--ok)}.hash{font:12px ui-monospace,monospace;word-break:break-all}
+#note{background:#000;border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px;text-align:left;white-space:pre-wrap;word-break:break-word}
+#prev{margin-top:12px;max-height:46vh;overflow:auto}
+#prev img,#prev video{max-width:100%;max-height:44vh;border-radius:12px;border:1px solid var(--line)}
+#prev audio{width:100%}
+#prev pre{margin:0;text-align:left;white-space:pre-wrap;word-break:break-word;font:13px ui-monospace,monospace;background:#000;border:1px solid var(--line);border-radius:12px;padding:12px}
+.foot{color:var(--mut);font-size:12px;margin-top:18px}
+[hidden]{display:none!important}
+</style></head><body>
+<main>
+ <svg class="logo" width="96" height="96" viewBox="0 0 120 120" fill="none" stroke="#b026ff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" aria-label="Lock and key">
+  <path d="M32 54V38a24 24 0 0 1 48 0v16"/><rect x="22" y="54" width="68" height="50" rx="10" fill="#000"/>
+  <circle cx="56" cy="76" r="7"/><path d="M56 83v10"/>
+  <g transform="rotate(-40 92 92)" stroke="#d58bff"><circle cx="70" cy="92" r="11" fill="#000"/><path d="M81 92h34M104 92v10M113 92v8"/></g>
+ </svg>
+ <h1>Bojack Secures</h1>
+ <p class="slogan">Strategy Over Impulse</p>
+
+ <section id="lockBox" class="box">
+  <p class="sub" style="margin-top:0">This file is encrypted. Enter the password the sender gave you.</p>
+  <input id="pw" type="password" placeholder="Password" autocomplete="off" autocapitalize="off" spellcheck="false">
+  <button id="show" type="button">Show password</button>
+  <div id="msg" role="alert"></div>
+  <button id="go" class="pri" type="button">Unlock</button>
+ </section>
+
+ <section id="openBox" class="box" hidden>
+  <b id="fname" style="word-break:break-word"></b>
+  <div id="prev"></div>
+  <div id="note" hidden></div>
+  <dl id="info"></dl>
+  <button id="dl" class="pri" type="button">Download file</button>
+  <button id="relock" type="button">Lock again</button>
+ </section>
+
+ <p class="foot">Encrypted with Bojack Secures · S.O.I. × Bojack Security · AES-256-GCM.<br>Opens fully offline: nothing is uploaded, your password never leaves this page.</p>
+</main>
+<noscript><p style="color:#ff4d6d;text-align:center">JavaScript is required to unlock this file. Open it in Chrome or Firefox.</p></noscript>
+
+<script id="bjh" type="application/json">__BJ_HDR__</script>
+<script id="bjc" type="application/octet-stream">__BJ_CT__</script>
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s);
+
+/*BJ-DECRYPT-BEGIN*/
+const bjB64=s=>{const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u};
+async function bjCt(b64){
+ try{const r=await fetch('data:application/octet-stream;base64,'+b64);return new Uint8Array(await r.arrayBuffer())}
+ catch{return bjB64(b64)}
+}
+async function bjDecrypt(pw,H,ctB64){
+ if(!H||H.v!==1||!H.salt||!H.iv)throw new Error('This file is not a valid Bojack Secures share.');
+ if(!(H.iter>=100000&&H.iter<=5000000))throw new Error('Unsupported key settings.');
+ const te=new TextEncoder(),salt=bjB64(H.salt),iv=bjB64(H.iv);
+ const master=await crypto.subtle.importKey('raw',te.encode(String(pw).normalize('NFC')),'PBKDF2',false,['deriveBits']);
+ const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:H.iter,hash:'SHA-256'},master,256);
+ const base=await crypto.subtle.importKey('raw',bits,'HKDF',false,['deriveKey']);
+ const key=await crypto.subtle.deriveKey({name:'HKDF',hash:'SHA-256',salt,info:te.encode('bojack-secures:v1:share-key')},base,{name:'AES-GCM',length:256},false,['decrypt']);
+ const ct=await bjCt(ctB64);
+ /* a wrong password and a damaged file both fail the GCM tag check; they cannot be told apart, by design */
+ const pt=new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv,additionalData:te.encode('bojack-secures:share:v1')},key,ct));
+ const ml=new DataView(pt.buffer,pt.byteOffset,pt.byteLength).getUint32(0);
+ if(ml>pt.length-4)throw new Error('Corrupt payload.');
+ const meta=JSON.parse(new TextDecoder().decode(pt.subarray(4,4+ml)));
+ return{meta,file:pt.subarray(4+ml)};
+}
+const bjHex=async u=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',u))].map(b=>b.toString(16).padStart(2,'0')).join('');
+/*BJ-DECRYPT-END*/
+
+const fmtSize=n=>n>=1e6?(n/1e6).toFixed(1)+' MB':n>=1e3?Math.round(n/1e3)+' KB':n+' bytes';
+const fmtDate=t=>{try{return t?new Date(t).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'}):''}catch{return''}};
+const safeName=n=>String(n||'file').replace(/[\\/:*?"<>|\u0000-\u001f]/g,'_').slice(0,150)||'file';
+let urls=[],blobUrl=null,fails=0,timer=null,cur=null;
+
+function row(dl,k,v,cls){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=k;dd.textContent=v;if(cls)dd.className=cls;dl.append(dt,dd)}
+function clearOpen(){urls.splice(0).forEach(u=>URL.revokeObjectURL(u));blobUrl=null;cur=null;$('#prev').replaceChildren();$('#info').replaceChildren();$('#note').textContent='';$('#note').hidden=true;$('#fname').textContent=''}
+function lockAgain(){clearOpen();$('#openBox').hidden=true;$('#lockBox').hidden=false;$('#pw').value='';$('#msg').textContent='';$('#pw').focus()}
+
+async function show(res){
+ const m=res.meta,file=res.file;cur={m,file};
+ $('#fname').textContent=m.name||'file';
+ const dl=$('#info');
+ row(dl,'Type',m.mime||'unknown');row(dl,'Size',fmtSize(file.length)+' ('+file.length.toLocaleString()+' bytes)');
+ if(m.mod)row(dl,'Modified',fmtDate(m.mod));if(m.shared)row(dl,'Shared',fmtDate(m.shared));
+ const sha=await bjHex(file);
+ if(m.sha256){row(dl,'Integrity',sha===m.sha256?'SHA-256 matches ✓':'SHA-256 DOES NOT MATCH ✗',sha===m.sha256?'ok':'');}
+ row(dl,'SHA-256',sha,'hash');
+ if(m.note){$('#note').textContent=m.note;$('#note').hidden=false}
+ const mime=String(m.mime||''),prev=$('#prev'),previewable=/^(image|video|audio)\/[a-z0-9.+-]+$/i.test(mime);
+ if(previewable){const u=URL.createObjectURL(new Blob([file],{type:mime}));urls.push(u);
+  const tag=mime.startsWith('image/')?'img':mime.startsWith('video/')?'video':'audio',e=document.createElement(tag);
+  e.src=u;if(tag!=='img'){e.controls=true;e.playsInline=true}prev.append(e)}
+ else if(/^text\//i.test(mime)&&!/html/i.test(mime)&&file.length<=2e6){const pre=document.createElement('pre');pre.textContent=new TextDecoder().decode(file).slice(0,20000);prev.append(pre)}
+ $('#lockBox').hidden=true;$('#openBox').hidden=false;
+}
+
+function cool(sec){const b=$('#go');b.disabled=true;let s=sec;
+ const tick=()=>{if(s<=0){b.disabled=false;b.textContent='Unlock';$('#msg').textContent='';return}b.textContent='Try again in '+s+'s';s--;timer=setTimeout(tick,1000)};tick()}
+
+async function unlock(){
+ const pw=$('#pw').value;if(!pw){$('#msg').textContent='Enter the password.';return}
+ const b=$('#go');b.disabled=true;b.textContent='Unlocking…';$('#msg').textContent='';
+ try{
+  const res=await bjDecrypt(pw,JSON.parse($('#bjh').textContent),$('#bjc').textContent.trim());
+  fails=0;$('#pw').value='';b.disabled=false;b.textContent='Unlock';await show(res);
+ }catch(err){
+  if(err&&err.name==='OperationError'){fails++;$('#msg').textContent='Wrong password, or the file was damaged.';cool(Math.min(30,Math.pow(2,fails-1)))}
+  else{b.disabled=false;b.textContent='Unlock';$('#msg').textContent=(err&&err.message)||'Could not open this file.'}
+ }
+}
+
+$('#go').onclick=unlock;$('#pw').onkeydown=e=>{if(e.key==='Enter')unlock()};
+$('#show').onclick=()=>{const p=$('#pw'),on=p.type==='password';p.type=on?'text':'password';$('#show').textContent=on?'Hide password':'Show password'};
+$('#relock').onclick=lockAgain;
+$('#dl').onclick=()=>{if(!cur)return;
+ const mime=String(cur.m.mime||'');
+ const u=URL.createObjectURL(new Blob([cur.file],{type:'application/octet-stream'}));urls.push(u);
+ const a=document.createElement('a');a.href=u;a.download=safeName(cur.m.name);document.body.append(a);a.click();a.remove()};
+window.addEventListener('pagehide',clearOpen);
+if(!(window.crypto&&crypto.subtle)){$('#go').disabled=true;$('#msg').textContent='This viewer cannot decrypt files. Open this file in Chrome or Firefox.'}
+})();
+</script>
+</body></html>

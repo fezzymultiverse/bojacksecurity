@@ -5,9 +5,7 @@ build_apk:
   stage: build
   image: mingc/android-build-box:latest
   script:
-    - npm install
-    - npx cap add android
-    - bash scripts/patch-android.sh
+    - bash build.sh ci-prepare
     - cd android && chmod +x gradlew && ./gradlew assembleDebug
   artifacts:
     paths:

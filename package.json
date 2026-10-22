@@ -1,0 +1,12 @@
+{
+  "name": "bojack-secures",
+  "version": "0.6.34",
+  "description": "Bojack Secures",
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  }
+}

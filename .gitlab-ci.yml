@@ -7,8 +7,7 @@ build_apk:
   script:
     - npm install
     - npx cap add android
-    - cp scripts/android-native/*.java android/app/src/main/java/com/fezzy/vault/
-    - sed -i 's/import com.getcapacitor.BridgeActivity;/import com.getcapacitor.BridgeActivity;\nimport com.fezzy.vault.BojackStore;\nimport com.fezzy.vault.PrivBrowser;\nimport com.fezzy.vault.BojackStoreJs;/' android/app/src/main/java/com/fezzy/vault/MainActivity.java
+    - bash scripts/patch-android.sh
     - cd android && chmod +x gradlew && ./gradlew assembleDebug
   artifacts:
     paths:

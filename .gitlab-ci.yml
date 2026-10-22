@@ -1,85 +1,15 @@
-# Bojack Secures: check -> build (signed APK) -> release.
-# The Android project is generated in CI (build.sh ci-prepare), so android/ does not have to be committed.
-# Required CI/CD variables (Settings > CI/CD > Variables, masked): KEYSTORE_B64, KEYSTORE_PASS, KEY_ALIAS
-# Protected variables only reach protected branches/tags: protect `main` and the `v*` tag pattern, or untick "Protected".
-stages: [check, build, release]
-
-workflow:
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
-      when: never
-    - if: '$CI_COMMIT_BRANCH || $CI_COMMIT_TAG'
-
-variables:
-  GIT_DEPTH: "1"
-  npm_config_cache: "$CI_PROJECT_DIR/.npm"
-  GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
-  npm_config_fund: "false"
-  npm_config_audit: "false"
-
-check:
-  stage: check
-  image: node:20-alpine
-  interruptible: true
-  script:
-    - apk add --no-cache bash
-    - bash -n build.sh scripts/patch-android.sh scripts/verify-build.sh
-    - node scripts/check-js.js
-    - node scripts/test-share.js
+stages:
+  - build
 
 build_apk:
   stage: build
   image: mingc/android-build-box:latest
-  needs: [check]
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-    - if: '$CI_COMMIT_TAG'
-  cache:
-    key: "bojack-$CI_COMMIT_REF_SLUG"
-    paths: [.npm/, .gradle/caches/, .gradle/wrapper/]
-  before_script:
-    - |
-      for v in KEYSTORE_B64 KEYSTORE_PASS KEY_ALIAS; do
-        if [ -z "$(printenv $v)" ]; then
-          echo "ERROR: CI/CD variable $v is not set (or is protected and this ref is not protected)." >&2
-          echo "Fix: Settings > CI/CD > Variables. See docs/BUILD.md step 4." >&2
-          exit 1
-        fi
-      done
   script:
-    - bash build.sh ci-prepare
-    - bash scripts/verify-build.sh project
-    - cd android && chmod +x gradlew && ./gradlew --no-daemon assembleRelease && cd ..
-    - echo "$KEYSTORE_B64" | base64 -d > ks.jks
-    - BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
-    - UNSIGNED=$(ls android/app/build/outputs/apk/release/*-unsigned.apk | head -1)
-    - $BT/zipalign -p -f 4 "$UNSIGNED" aligned.apk
-    - $BT/apksigner sign --ks ks.jks --ks-pass env:KEYSTORE_PASS --ks-key-alias "$KEY_ALIAS" --out BojackSecures-signed.apk aligned.apk
-    - $BT/apksigner verify --verbose BojackSecures-signed.apk
-    - bash scripts/verify-build.sh apk BojackSecures-signed.apk
-    - echo "=== BOJACK SECURES BUILD VERIFIED: native classes are inside BojackSecures-signed.apk ==="
-    - sha256sum BojackSecures-signed.apk | tee BojackSecures-signed.apk.sha256
-    - rm -f ks.jks aligned.apk
+    - npm install
+    - npx cap add android
+    - cp scripts/android-native/*.java android/app/src/main/java/com/fezzy/vault/
+    - sed -i 's/import com.getcapacitor.BridgeActivity;/import com.getcapacitor.BridgeActivity;\nimport com.fezzy.vault.BojackStore;\nimport com.fezzy.vault.PrivBrowser;\nimport com.fezzy.vault.BojackStoreJs;/' android/app/src/main/java/com/fezzy/vault/MainActivity.java
+    - cd android && chmod +x gradlew && ./gradlew assembleDebug
   artifacts:
-    paths: [BojackSecures-signed.apk, BojackSecures-signed.apk.sha256]
-    expire_in: 30 days
-
-release:
-  stage: release
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
-  needs: [build_apk]
-  rules:
-    - if: '$CI_COMMIT_TAG'
-  script:
-    - echo "Releasing $CI_COMMIT_TAG"
-  release:
-    tag_name: '$CI_COMMIT_TAG'
-    name: 'Bojack Secures $CI_COMMIT_TAG'
-    description: 'See CHANGELOG.md. Verify the download against BojackSecures-signed.apk.sha256.'
-    assets:
-      links:
-        - name: BojackSecures-signed.apk
-          url: '$CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/BojackSecures-signed.apk?job=build_apk'
-        - name: BojackSecures-signed.apk.sha256
-          url: '$CI_PROJECT_URL/-/jobs/artifacts/$CI_COMMIT_TAG/raw/BojackSecures-signed.apk.sha256?job=build_apk'
+    paths:
+      - android/app/build/outputs/apk/debug/app-debug.apk

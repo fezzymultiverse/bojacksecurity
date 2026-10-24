@@ -39,13 +39,25 @@ jobs:
         run: npx cap sync android
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        shell: bash
+        run: |
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+          if [ ! -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            cd "$ANDROID_HOME/cmdline-tools"
+            curl -fsSL -o cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            unzip -q -o cmdline-tools.zip
+            rm -f cmdline-tools.zip
+            if [ -d "$ANDROID_HOME/cmdline-tools/cmdline-tools" ]; then
+              mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+            fi
+          fi
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
 
       - name: Install SDK packages
+        shell: bash
         run: |
-          SM="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager | head -1)"
-          yes | "$SM" --licenses || true
-          "$SM" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Decode Keystore
         env:

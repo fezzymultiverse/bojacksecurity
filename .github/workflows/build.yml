@@ -19,7 +19,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
 
       - name: Install dependencies
         run: npm install
@@ -28,7 +28,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '17'
 
       - name: Add Android platform
         run: |
@@ -37,27 +37,6 @@ jobs:
 
       - name: Sync Capacitor
         run: npx cap sync android
-
-      - name: Set up Android SDK
-        shell: bash
-        run: |
-          mkdir -p "$ANDROID_HOME/cmdline-tools"
-          if [ ! -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
-            cd "$ANDROID_HOME/cmdline-tools"
-            curl -fsSL -o cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-            unzip -q -o cmdline-tools.zip
-            rm -f cmdline-tools.zip
-            if [ -d "$ANDROID_HOME/cmdline-tools/cmdline-tools" ]; then
-              mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
-            fi
-          fi
-          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
-
-      - name: Install SDK packages
-        shell: bash
-        run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
@@ -69,48 +48,49 @@ jobs:
 
       - name: Decode Keystore
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
         run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/release.keystore
+          test -n "$KEYSTORE_B64"
+          echo "$KEYSTORE_B64" | base64 --decode > android/app/release.keystore
 
       - name: Bump versionCode
         run: |
           sed -i "/defaultConfig {/,/}/s/versionCode [0-9]*/versionCode ${{ github.run_number }}/" android/app/build.gradle
           sed -i "/defaultConfig {/,/}/s/versionName \"[^\"]*\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
 
-      - name: Configure Signing
+      - name: Configure Signing in build.gradle
         run: |
           python3 - <<'PY'
-          from pathlib import Path
-          p = Path('android/app/build.gradle')
-          text = p.read_text()
-          if 'signingConfigs' not in text:
-              text = text.replace(
-                  "    buildTypes {\n",
-                  """    signingConfigs {
-              release {
-                  storeFile file("release.keystore")
-                  storePassword System.getenv("KEYSTORE_PASS")
-                  keyAlias System.getenv("KEY_ALIAS")
-                  keyPassword System.getenv("KEYSTORE_PASS")
-              }
-          }
-          buildTypes {
-          """,
-                  1,
-              )
-          if 'signingConfig signingConfigs.release' not in text:
-              text = text.replace(
-                  "        release {\n",
-                  "        release {\n            signingConfig signingConfigs.release\n",
-                  1,
-              )
-          p.write_text(text)
-          PY
+from pathlib import Path
+p = Path('android/app/build.gradle')
+text = p.read_text()
+if 'signingConfigs' not in text:
+text = text.replace(
+    "    buildTypes {\n",
+    """    signingConfigs {
+        release {
+            storeFile file("release.keystore")
+            storePassword System.getenv("KEYSTORE_PASS")
+            keyAlias System.getenv("KEY_ALIAS")
+            keyPassword System.getenv("KEYSTORE_PASS")
+        }
+    }
+    buildTypes {
+    """,
+        1,
+    )
+if 'signingConfig signingConfigs.release' not in text:
+text = text.replace(
+    "        release {\n",
+    "        release {\n            signingConfig signingConfigs.release\n",
+        1,
+    )
+p.write_text(text)
+PY
 
       - name: Build signed release APK
         env:
-          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         working-directory: android
         run: ./gradlew assembleRelease
@@ -121,7 +101,7 @@ jobs:
           name: signed-app
           path: android/app/build/outputs/apk/release/app-release.apk
 
-      - name: Publish GitHub Release
+      - name: Publish GitHub Release (for Obtainium)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

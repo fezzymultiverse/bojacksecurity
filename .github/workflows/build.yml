@@ -38,20 +38,18 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v4
-        with:
-          packages: |
-            platform-tools
-            platforms;android-34
-            build-tools;34.0.0
+
+      - name: Install SDK packages
+        run: |
+          SM="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager | head -1)"; yes | "$SM" --licenses || true
+          "$SM" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Decode Keystore
         env:
-          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          test -n "$KEYSTORE_B64"
-          echo "$KEYSTORE_B64" | base64 --decode > android/app/release.keystore
+          test -n "$KEYSTORE_BASE64"
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/release.keystore
 
       - name: Bump versionCode
         run: |
@@ -61,36 +59,36 @@ jobs:
       - name: Configure Signing in build.gradle
         run: |
           python3 - <<'PY'
-from pathlib import Path
-p = Path('android/app/build.gradle')
-text = p.read_text()
-if 'signingConfigs' not in text:
-text = text.replace(
-    "    buildTypes {\n",
-    """    signingConfigs {
-        release {
-            storeFile file("release.keystore")
-            storePassword System.getenv("KEYSTORE_PASS")
-            keyAlias System.getenv("KEY_ALIAS")
-            keyPassword System.getenv("KEYSTORE_PASS")
-        }
-    }
-    buildTypes {
-    """,
-        1,
-    )
-if 'signingConfig signingConfigs.release' not in text:
-text = text.replace(
-    "        release {\n",
-    "        release {\n            signingConfig signingConfigs.release\n",
-        1,
-    )
-p.write_text(text)
-PY
+          from pathlib import Path
+          p = Path('android/app/build.gradle')
+          text = p.read_text()
+          if 'signingConfigs' not in text:
+              text = text.replace(
+                  "    buildTypes {\n",
+                  """    signingConfigs {
+              release {
+                  storeFile file("release.keystore")
+                  storePassword System.getenv("KEYSTORE_PASS")
+                  keyAlias System.getenv("KEY_ALIAS")
+                  keyPassword System.getenv("KEYSTORE_PASS")
+              }
+          }
+          buildTypes {
+          """,
+                  1,
+              )
+          if 'signingConfig signingConfigs.release' not in text:
+              text = text.replace(
+                  "        release {\n",
+                  "        release {\n            signingConfig signingConfigs.release\n",
+                  1,
+              )
+          p.write_text(text)
+          PY
 
       - name: Build signed release APK
         env:
-          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         working-directory: android
         run: ./gradlew assembleRelease

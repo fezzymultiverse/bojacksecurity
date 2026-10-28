@@ -35,6 +35,12 @@ jobs:
           npx cap add android || true
           test -d android
 
+      - name: Install native Java files and manifest patches
+        run: bash scripts/patch-android.sh
+
+      - name: Generate app icon and splash from assets/
+        run: bash build.sh assets
+
       - name: Sync Capacitor
         run: npx cap sync android
 
@@ -42,7 +48,7 @@ jobs:
       - name: Install SDK packages
         run: |
           SM="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager | head -1)"; yes | "$SM" --licenses || true
-          "$SM" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          "$SM" "platform-tools" "platforms;android-34" "build-tools;34.0.0" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Decode Keystore
         env:

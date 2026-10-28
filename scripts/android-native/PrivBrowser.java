@@ -1,11 +1,18 @@
 package com.fezzy.vault;
 
 import android.app.Activity;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.database.Cursor;
+import android.media.MediaScannerConnection;
+import android.webkit.MimeTypeMap;
 import android.util.Base64;
 import android.view.Gravity;
 import android.view.View;
@@ -31,8 +38,10 @@ import org.json.JSONObject;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -705,6 +714,87 @@ public class PrivBrowser {
             return Base64.encodeToString(b, 0, n, Base64.NO_WRAP);
         } catch (Throwable e) { return ""; }
         finally { try { if (r != null) r.close(); } catch (Throwable ignored) { } }
+    }
+
+    // ---------- V0.6.35: copy an inbox file into the phone's public Downloads folder ----------
+    /** Copies filesDir/browser-inbox/<name> into the phone's Downloads folder (MediaStore on Android 10+, no permission needed;
+     *  the old public folder on Android 9 and older). The inbox copy stays, so the vault sealing that follows still works.
+     *  Result comes back as an event: t=pub, state ok|err, name (inbox name), saved (name in Downloads) or err. */
+    @JavascriptInterface
+    public void savePhone(final String name) {
+        final File src = inboxFile(name);
+        if (src == null || !src.isFile()) {
+            emit(o("t", "pub", "name", String.valueOf(name), "state", "err", "err", "The file is no longer in the browser inbox"));
+            return;
+        }
+        ex.execute(new Runnable() { public void run() {
+            InputStream in = null;
+            OutputStream out = null;
+            Uri uri = null;
+            File pubFile = null;
+            try {
+                String ext = "";
+                int dot = name.lastIndexOf('.');
+                if (dot > 0 && dot < name.length() - 1) ext = name.substring(dot + 1).toLowerCase();
+                String mime = ext.isEmpty() ? null : MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+                if (mime == null || mime.isEmpty()) mime = "application/octet-stream";
+                String saved = name;
+                in = new FileInputStream(src);
+                if (Build.VERSION.SDK_INT >= 29) {
+                    ContentResolver cr = act.getContentResolver();
+                    ContentValues v = new ContentValues();
+                    v.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
+                    v.put(MediaStore.MediaColumns.MIME_TYPE, mime);
+                    v.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                    v.put(MediaStore.MediaColumns.IS_PENDING, 1);
+                    uri = cr.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
+                    if (uri == null) throw new Exception("Android would not create the file in Downloads");
+                    out = cr.openOutputStream(uri);
+                    if (out == null) throw new Exception("Android would not open the file in Downloads");
+                    byte[] buf = new byte[65536];
+                    int n;
+                    while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+                    out.flush();
+                    out.close();
+                    out = null;
+                    ContentValues done = new ContentValues();
+                    done.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                    cr.update(uri, done, null, null);
+                    Cursor c = null;
+                    try {
+                        c = cr.query(uri, new String[]{MediaStore.MediaColumns.DISPLAY_NAME}, null, null, null);
+                        if (c != null && c.moveToFirst() && c.getString(0) != null) saved = c.getString(0);
+                    } catch (Throwable ignored) {
+                    } finally { try { if (c != null) c.close(); } catch (Throwable ignored) { } }
+                } else {
+                    File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                    if (dir == null) throw new Exception("No Downloads folder on this phone");
+                    if (!dir.exists() && !dir.mkdirs()) throw new Exception("Could not create the Downloads folder");
+                    String base = name, e2 = "";
+                    if (dot > 0) { base = name.substring(0, dot); e2 = name.substring(dot); }
+                    pubFile = new File(dir, name);
+                    int i = 1;
+                    while (pubFile.exists()) pubFile = new File(dir, base + "-" + (i++) + e2);
+                    out = new FileOutputStream(pubFile);
+                    byte[] buf = new byte[65536];
+                    int n;
+                    while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+                    out.flush();
+                    out.close();
+                    out = null;
+                    saved = pubFile.getName();
+                    try { MediaScannerConnection.scanFile(act, new String[]{pubFile.getAbsolutePath()}, new String[]{mime}, null); } catch (Throwable ignored) { }
+                }
+                emit(o("t", "pub", "name", name, "state", "ok", "saved", saved));
+            } catch (Throwable e) {
+                try { if (out != null) out.close(); } catch (Throwable ignored) { }
+                try { if (uri != null) act.getContentResolver().delete(uri, null, null); } catch (Throwable ignored) { }
+                try { if (pubFile != null) pubFile.delete(); } catch (Throwable ignored) { }
+                emit(o("t", "pub", "name", name, "state", "err", "err", String.valueOf(e.getMessage() == null ? e : e.getMessage())));
+            } finally {
+                try { if (in != null) in.close(); } catch (Throwable ignored) { }
+            }
+        } });
     }
 
     @JavascriptInterface

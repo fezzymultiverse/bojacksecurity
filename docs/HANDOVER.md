@@ -2,6 +2,10 @@
 Stack: single-file www/index.html (vanilla JS, Web Crypto, IndexedDB) wrapped with Capacitor Android. Plugins: @capacitor/filesystem, @capgo/capacitor-native-biometric, @capacitor/local-notifications, @capacitor-community/privacy-screen, @capacitor/app, @capacitor/device, @capacitor/share (@capacitor/share added in V0.6.0 — run `npm i @capacitor/share && npx cap sync android` on an existing project; app and device were added in V0.5.0 for settings deep-links and system info — run `./build.sh init` again, or `npm i @capacitor/app @capacitor/device && npx cap sync android`, to pick them up).
 Package: com.fezzy.vault. Build via build.sh and .gitlab-ci.yml (unsigned release -> zipalign -> apksigner).
 Rules: surgical edits only, no unapproved changes, keep black (#000) + neon purple (#b026ff).
+## V0.6.35 changes
+- PrivBrowser.java: new `@JavascriptInterface savePhone(name)` copies filesDir/browser-inbox/<name> to the public Downloads folder (MediaStore.Downloads on API 29+, Environment public Downloads + MediaScanner below 29). Runs on the executor, reports `{t:'pub',state,name,saved|err}` through emit().
+- www/index.html: setting `pub` (default 1) in DEF and SETS > Downloads; `phoneSave()` and `dlAfter()`; ev() handles `pub`; on a finished download with `pub` on, the copy runs first and sealing (`dlAfter`) continues when the `pub` event arrives, success or failure. Buttons `phone` / `phoneall` in dlsPanel copy only (ST.pubMan marks manual copies so they do not seal).
+- Not run on a phone or in a pipeline.
 ## V0.6.34 changes
 - IndexedDB (www/index.html): `dbp` (one connection opened once, kept forever) is replaced by `dbOpen()` / `dbTx()`. The connection is opened on demand, nothing runs before `onsuccess`, `onclose` / `onversionchange` clear it, and a transaction that hits "connection is closing" reopens and retries (max 3). `idbTx` and `idbRows` use it; the loader's copy of the cursor code now calls `idbRows()`.
 - scripts/patch-android.sh: reads the package from build.gradle (must be com.fezzy.vault), copies scripts/android-native/*.java there, cmp-checks every file, deletes duplicate copies in other folders, exits 1 on any problem.

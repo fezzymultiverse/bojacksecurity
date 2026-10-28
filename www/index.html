@@ -1448,7 +1448,7 @@ const withTO=(p,ms,what)=>Promise.race([Promise.resolve(p),new Promise((_,rej)=>
 /* V0.6.30: which APK is installed, and what its native part really contains. Replaces the old "Needs the new build (V0.6.9 native code)"
    toast, which never said what the phone actually had. The version comes from the App plugin (the real versionName), so it works in every APK. */
 var apkCache=null,nbShown=0,bnDone=false;
-const NEED_MIN={openUrl:['0.6.9','opening a link in another app'],openSettings:['0.6.9','opening an Android settings screen'],store:['0.6.21','the native vault storage']};
+const NEED_MIN={openUrl:['0.6.9','opening a link in another app'],openSettings:['0.6.9','opening an Android settings screen'],store:['0.6.21','the native vault storage'],savePhone:['0.6.35','saving a download to the phone Downloads folder']};
 function vCmp(a,b){const x=String(a||'').split('.').map(n=>parseInt(n,10)||0),y=String(b||'').split('.').map(n=>parseInt(n,10)||0);for(let i=0;i<3;i++){const p=x[i]||0,q=y[i]||0;if(p!==q)return p<q?-1:1}return 0}
 async function apkInfo(){if(apkCache)return apkCache;let r={ok:false,ver:'',code:''};try{const A=APP();if(A&&A.getInfo){const i=await withTO(A.getInfo(),4000,'app info');if(i&&i.version)r={ok:true,ver:String(i.version),code:String(i.build||'')}}}catch(e){errLog('apkInfo: '+((e&&e.message)||e))}apkCache=r;return r}
 function nativeParts(){
@@ -1823,7 +1823,7 @@ const EYE_ON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-
 function eyeSet(b,show){const i=document.getElementById(b.dataset.for);i.type=show?'text':'password';b.innerHTML=show?EYE_ON:EYE_OFF;b.classList.toggle('on',show);b.setAttribute('aria-pressed',String(show));b.setAttribute('aria-label',show?'Hide password':'Show password')}
 function eyesReset(){document.querySelectorAll('.eye').forEach(b=>eyeSet(b,false))}
 document.querySelectorAll('.eye').forEach(b=>{eyeSet(b,false);b.addEventListener('pointerdown',e=>e.preventDefault());b.onclick=()=>eyeSet(b,b.getAttribute('aria-pressed')!=='true')});
-const VER='0.6.34';
+const VER='0.6.35';
 const PAWBADGE='<div style="text-align:center;margin:4px 0 16px"><svg width="84" height="84" viewBox="0 0 120 120" aria-label="Bojack Secures logo" style="filter:drop-shadow(0 0 14px rgba(176,38,255,.8))"><g fill="#b026ff"><ellipse cx="60" cy="78" rx="26" ry="21"/><ellipse cx="30" cy="48" rx="10.5" ry="13.5" transform="rotate(-18 30 48)"/><ellipse cx="48" cy="34" rx="10.5" ry="14" transform="rotate(-6 48 34)"/><ellipse cx="72" cy="34" rx="10.5" ry="14" transform="rotate(6 72 34)"/><ellipse cx="90" cy="48" rx="10.5" ry="13.5" transform="rotate(18 90 48)"/></g></svg><div style="color:var(--p2);font-size:13px;letter-spacing:.6px;margin-top:4px">Strategy Over Impulse</div></div>';
 function page(t,h){$('#pt').textContent=t;$('#pb').innerHTML=PAWBADGE+h;$('#page').hidden=false}
 $('#pClose').onclick=()=>$('#page').hidden=true;
@@ -1880,7 +1880,7 @@ initLock().then(()=>ask()).catch(()=>{});
 try{(function(){
 var N=window.BojackPB||null;
 var ST={cfg:{},tabs:[],cur:'',open:false,pan:'',D:{},bm:[],hist:[],pend:{},lastAct:Date.now(),sealing:false,media:[],mf:'all',ctx:null,rd:null};
-var DEF={eng:'ddg',cust:'',home:'',ad:1,https:1,tpc:0,ck:1,ban:1,webrtc:1,spoof:1,hist:0,clr:1,noimg:0,js:1,desk:0,dark:0,zoom:100,newtab:1,auto:1};
+var DEF={eng:'ddg',cust:'',home:'',ad:1,https:1,tpc:0,ck:1,ban:1,webrtc:1,spoof:1,hist:0,clr:1,noimg:0,js:1,desk:0,dark:0,zoom:100,newtab:1,auto:1,pub:1};
 var ENG={ddg:['DuckDuckGo','https://duckduckgo.com/?q=%s'],ddgl:['DuckDuckGo Lite (no JavaScript)','https://lite.duckduckgo.com/lite/?q=%s'],brave:['Brave Search','https://search.brave.com/search?q=%s'],sp:['Startpage','https://www.startpage.com/do/search?q=%s'],mj:['Mojeek','https://www.mojeek.com/search?q=%s'],qw:['Qwant','https://www.qwant.com/?q=%s'],cu:['Custom (your own link with %s)','']};
 var MIME={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp',bmp:'image/bmp',avif:'image/avif',svg:'image/svg+xml',heic:'image/heic',
 mp4:'video/mp4',m4v:'video/mp4',webm:'video/webm',mkv:'video/x-matroska',mov:'video/quicktime','3gp':'video/3gpp',
@@ -1891,7 +1891,7 @@ var SETS=[
 ['Search',[['sel','eng','Search engine','DuckDuckGo is the default'],['txt','cust','Custom search link','Used when Custom is chosen. Must start with https:// and contain %s'],['txt','home','Home page','Leave empty for the Bojack start page']]],
 ['Privacy',[['sw','ad','Ad and tracker blocker','Blocks known ad, tracking and analytics hosts and hides ad boxes'],['sw','https','HTTPS only','Upgrades plain http links; sites without https will not open'],['sw','ban','Cookie banner remover','Hides common cookie and consent pop-ups'],['sw','webrtc','Block WebRTC','Stops pages from reading your network addresses'],['sw','spoof','Fingerprint shield','Fixes CPU and memory values and turns on Do Not Track and Global Privacy Control'],['sw','ck','Allow cookies','Off blocks every cookie (many sites will not log in)'],['sw','tpc','Allow third-party cookies','Off is safer'],['sw','hist','Save browsing history','Off by default, nothing is remembered'],['sw','clr','Clear data when the browser closes','Cookies, cache and site data are wiped']]],
 ['Pages',[['sw','js','JavaScript','Off is safest but breaks many sites'],['sw','desk','Desktop site','Asks for the desktop version of pages'],['sw','dark','Dark pages','Forces a dark look on pages'],['sw','noimg','Block images','Saves data'],['sw','newtab','Links that open a new window use a new tab','Pop-ups without a tap are always blocked'],['rng','zoom','Text size','50% to 200%']]],
-['Downloads',[['sw','auto','Seal downloads into the vault automatically','Files are saved in a private inbox, encrypted into the vault, then the inbox copy is deleted']]]];
+['Downloads',[['sw','pub','Also save a copy to the phone Downloads folder','The copy in Downloads is NOT encrypted and any app can see it. Turn off to keep downloads only in the vault'],['sw','auto','Seal downloads into the vault automatically','Files are saved in a private inbox, encrypted into the vault, then the inbox copy is deleted']]]];
 var READER="(function(){try{var c=document.querySelector('article')||document.querySelector('main')||document.body,L=[].slice.call(c.querySelectorAll('p,h1,h2,h3,li,blockquote')).map(function(e){return{t:e.tagName.toLowerCase(),x:(e.innerText||'').trim()}}).filter(function(o){return o.x.length>(o.t.charAt(0)==='h'?2:40)});return JSON.stringify({title:document.title,items:L.slice(0,500)})}catch(e){return JSON.stringify({title:document.title,items:[]})}})()";
 var SCAN="(function(){try{var out=[],seen={},B=location.href,X={img:/\\.(jpe?g|png|gif|webp|bmp|avif|svg|heic)(\\?|#|$)/i,video:/\\.(mp4|m4v|webm|mkv|mov|3gp)(\\?|#|$)/i,audio:/\\.(mp3|m4a|aac|wav|ogg|opus|flac)(\\?|#|$)/i,doc:/\\.(pdf|docx?|xlsx?|pptx?|txt|csv|rtf|odt|epub|zip)(\\?|#|$)/i};"
 +"function add(u,k){if(!u)return;try{u=new URL(u,B).href}catch(e){return}if(!/^https?:/i.test(u)||seen[u]||out.length>=300)return;seen[u]=1;out.push({u:u,k:k})}"
@@ -2020,9 +2020,9 @@ function saveUrl(u,name){var t=cT();if(!t)return;try{N.download(t.id,u,name||fna
 /* ---------- downloads and vault sealing ---------- */
 function inbox(){try{return JSON.parse(N.inboxList()||'[]')}catch(e){return[]}}
 function dlsPanel(){var run=Object.keys(ST.D).map(function(k){return ST.D[k]}).filter(function(d){return d.state==='run'||d.state==='err'||d.state==='vault'}),L=inbox(),h='';
- if(L.length)h+='<button class="pbBig" data-a="sealall">Save '+L.length+' waiting file'+(L.length>1?'s':'')+' to the vault</button>';
+ if(L.length)h+='<button class="pbBig" data-a="sealall">Save '+L.length+' waiting file'+(L.length>1?'s':'')+' to the vault</button><button class="pbBig" data-a="phoneall">Copy '+L.length+' waiting file'+(L.length>1?'s':'')+' to the phone Downloads</button>';
  h+=run.map(function(d){var pc=d.total>0?Math.round(d.got*100/d.total):0;return '<div class="pbRow2"><span class="pbDl"><b>'+E(d.name)+'</b><small>'+(d.state==='run'?'Downloading '+(d.total>0?pc+'%':size(d.got||0)):d.state==='vault'?'In your vault (sealed and encrypted)':'Failed: '+E(d.err||''))+'</small></span>'+(d.state==='run'?'<button data-a="dlx" data-id="'+E(d.id)+'">✕</button>':'')+'</div>'}).join('');
- h+=L.map(function(f,i){return '<div class="pbRow2"><span class="pbDl"><b>'+E(f.name)+'</b><small>Waiting in the private inbox · '+size(f.size||0)+'</small></span><button data-a="sealone" data-n="'+E(f.name)+'">🔒</button><button data-a="delone" data-n="'+E(f.name)+'">🗑</button></div>'}).join('');
+ h+=L.map(function(f,i){return '<div class="pbRow2"><span class="pbDl"><b>'+E(f.name)+'</b><small>Waiting in the private inbox · '+size(f.size||0)+'</small></span><button data-a="phone" data-n="'+E(f.name)+'" aria-label="Copy to phone Downloads">📲</button><button data-a="sealone" data-n="'+E(f.name)+'">🔒</button><button data-a="delone" data-n="'+E(f.name)+'">🗑</button></div>'}).join('');
  pan('Downloads',h||'<p class="pbMut">No downloads yet. Long-press an image or link, or use Menu > Download media.</p>','dls')}
 class PFile{constructor(m){this.name=m.name;this.size=+m.size||0;this.type=mimeOf(m.name);this.lastModified=m.mod||null;this.pb=true}
  slice(a,b){var me=this;a=a||0;b=Math.min(b==null?me.size:b,me.size);return{size:Math.max(0,b-a),arrayBuffer:function(){return me.read(a,b-a)}}}
@@ -2030,6 +2030,12 @@ class PFile{constructor(m){this.name=m.name;this.size=+m.size||0;this.type=mimeO
  async read(off,len){if(len<=0)return new ArrayBuffer(0);var parts=[],got=0,CH=1048576;
   while(got<len){var n=Math.min(len-got,CH),s=N.readChunk(this.name,off+got,n);if(!s)break;var buf=await(await fetch('data:application/octet-stream;base64,'+s)).arrayBuffer();parts.push(buf);got+=buf.byteLength;if(buf.byteLength<n)break}
   if(parts.length===1)return parts[0];var out=new Uint8Array(got),o=0;for(var i=0;i<parts.length;i++){out.set(new Uint8Array(parts[i]),o);o+=parts[i].byteLength}return out.buffer}}
+/* V0.6.35: copy a finished download into the phone Downloads folder. manual=true comes from the phone buttons (nothing is sealed afterwards);
+   manual=false comes from a new download and continues with dlAfter() once the native side reports back. */
+function phoneSave(name,manual){if(!N||!N.savePhone){toast('Saving to the phone needs APK V0.6.35 or newer');if(!manual)dlAfter();return}
+ if(manual){ST.pubMan=ST.pubMan||{};ST.pubMan[name]=1}
+ try{N.savePhone(name)}catch(x){if(manual&&ST.pubMan)delete ST.pubMan[name];toast('Could not save to phone Downloads: '+((x&&x.message)||x));if(!manual)dlAfter()}}
+function dlAfter(){if(C('auto'))seal(false);else toast('Waiting in the browser inbox. Menu > Downloads')}
 async function seal(manual,only){if(!N||ST.sealing)return;var L=inbox();if(only)L=L.filter(function(f){return f.name===only});if(!L.length)return;
  if(typeof busy!=='undefined'&&busy>0){if(manual)toast('The vault is busy. Try again in a moment');return}
  if(typeof key==='undefined'||!key){if(manual)toast('Unlock the vault first');return}
@@ -2054,8 +2060,11 @@ function ev(e){ST.lastAct=Date.now();var t=tabById(e.id);
  case 'find':$('#pbFn').textContent=e.n?((e.active+1)+'/'+e.n):'0';break;
  case 'res':var f=ST.pend[e.k];if(f){delete ST.pend[e.k];f(e.v)}break;
  case 'ctx':ST.ctx={u:e.url,k:e.kind};pan(host(e.url)||'Link',(e.kind==='img'?item('ctxsave','⬇ Save image to the vault')+item('ctxtab','↗ Open image in a new tab'):item('ctxtab','↗ Open in a new tab')+item('ctxsave','⬇ Save the file at this link to the vault'))+item('ctxcopy','⧉ Copy link'),'ctx');break;
+ case 'pub':var man=ST.pubMan&&ST.pubMan[e.name];if(man)delete ST.pubMan[e.name];
+  if(e.state==='ok')toast('Saved to phone Downloads: '+(e.saved||e.name));else toast('Could not save to phone Downloads: '+(e.err||'unknown error'));
+  if(!man)dlAfter();else if(ST.pan==='dls')dlsPanel();break;
  case 'dl':var d=ST.D[e.id]||(ST.D[e.id]={id:e.id});d.name=e.name;d.state=e.state;d.got=e.got;d.total=e.total;d.err=e.err;
-  if(e.state==='ok'){toast('Saved: '+e.name);if(C('auto'))seal(false);else toast('Waiting in the browser inbox. Menu > Downloads')}
+  if(e.state==='ok'){if(C('pub')&&N&&N.savePhone){phoneSave(e.name,false)}else{toast('Saved: '+e.name);dlAfter()}}
   else if(e.state==='err')toast('Download failed: '+(e.err||''));
   if(ST.pan==='dls'&&e.state!=='run')dlsPanel();break}
  if(t&&t.id===ST.cur)render()}
@@ -2083,7 +2092,7 @@ msall:function(){var L=ST.media.filter(function(m){return ST.mf==='all'||m.k===S
 desk:function(){setCfg('desk',C('desk')?0:1);if(ST.pan==='addons')addonsPanel();else if(ST.pan==='menu')menu();toast(C('desk')?'Desktop site on':'Desktop site off')},
 copy:function(){var t=cT();if(t&&t.url)copy(t.url)},extopen:function(){var t=cT();if(t&&t.url)N.ext(t.url)},
 ctxsave:function(){if(ST.ctx){saveUrl(ST.ctx.u);toast('Downloading '+fname(ST.ctx.u))}panClose()},ctxtab:function(){var u=ST.ctx&&ST.ctx.u;panClose();if(u){newTab();go(u)}},ctxcopy:function(){if(ST.ctx)copy(ST.ctx.u);panClose()},
-sealall:function(){seal(true)},sealone:function(b){seal(true,b.dataset.n)},delone:function(b){try{N.inboxDel(b.dataset.n)}catch(e){}dlsPanel()},dlx:function(b){try{N.dlCancel(b.dataset.id)}catch(e){}},
+phone:function(b){phoneSave(b.dataset.n,true)},phoneall:function(){var L=inbox();if(!L.length)return;L.forEach(function(f){phoneSave(f.name,true)})},sealall:function(){seal(true)},sealone:function(b){seal(true,b.dataset.n)},delone:function(b){try{N.inboxDel(b.dataset.n)}catch(e){}dlsPanel()},dlx:function(b){try{N.dlCancel(b.dataset.id)}catch(e){}},
 closeb:function(){close()},pclose:function(){panClose()}};
 
 /* ---------- open / close / back ---------- */

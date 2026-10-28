@@ -1,4 +1,10 @@
 # Changelog
+## 0.6.35
+- New: browser downloads are now also saved to the phone's own Downloads folder, so they show up in the file manager. Before this, every download went only to a private inbox and then into the encrypted vault, so a browser download seemed to "save nowhere". New `PrivBrowser.savePhone(name)`: Android 10 and newer write through MediaStore (no permission needed), Android 9 and older write to the public Downloads folder (needs the storage permission already declared). The inbox copy stays, so sealing into the vault still happens afterwards. If the copy to Downloads fails, a message says why and the file still goes to the vault.
+- New: Settings > Downloads > "Also save a copy to the phone Downloads folder" (on by default). The copy in Downloads is NOT encrypted. Turn it off to keep downloads only in the vault.
+- New: Menu > Downloads shows a 📲 button on each waiting file and a "Copy N waiting files to the phone Downloads" button. These copy only; they do not seal.
+- Java changed (PrivBrowser.java): needs a fresh pipeline build and APK install. NEED_MIN knows savePhone needs V0.6.35.
+- Not tested on a phone and not run in a pipeline (no Android SDK here).
 ## 0.6.34
 - Fix: "Failed to execute 'transaction' on 'IDBDatabase': The database connection is closing". IndexedDB was opened once and that connection was reused forever; when the WebView closed it, every later transaction threw. It is now opened on demand, waits for the open to finish before any transaction, drops the connection when the browser closes it or asks to upgrade, and retries a transaction up to 3 times on a closing connection. Transactions that abort now reject instead of hanging. The duplicate cursor read in the loader now uses the same idbRows().
 - Build: patch-android.sh now reads the real package from android/app/build.gradle, refuses to continue unless it is com.fezzy.vault, copies every scripts/android-native/*.java into that package folder, removes any other MainActivity.java left in another folder, and stops with an error if any file did not arrive byte-identical.

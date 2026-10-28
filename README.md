@@ -21,8 +21,9 @@ That message means a button wants native code the installed APK does not have. F
 - Open the browser with the **globe** button in the top bar of any screen. DuckDuckGo is the default search. Menu: tabs, bookmarks, history (off by default), find in page, reader mode, desktop site, add-ons, settings, clear data.
 - Add-ons and Settings: ad and tracker blocker, cookie banner remover, HTTPS only, fingerprint shield, WebRTC guard, dark pages, image blocker, JavaScript switch, text size, clear data on close.
 - **Download media** (Menu or the Media button) lists the images, videos, music and documents a page exposes, with filters, Save per file and Save all (up to 40). You can also long-press an image or link.
-- Every download goes to a private inbox, is sealed into the vault, and the inbox copy is deleted after. If the vault is locked or busy the file waits (Menu > Downloads shows it) and is sealed later.
-- Needs APK V0.6.34 or newer (the browser is native code).
+- Every download goes to a private inbox, a copy is saved to the phone Downloads folder (unless you turn that off), it is sealed into the vault, and the inbox copy is deleted after. If the vault is locked or busy the file waits (Menu > Downloads shows it) and is sealed later.
+- Settings > Downloads has **Also save a copy to the phone Downloads folder** (on by default, V0.6.35). The copy in Downloads is NOT encrypted; the vault copy is. Menu > Downloads also has a 📲 button per waiting file and a Copy-all button. Turn the setting off to keep downloads only in the vault.
+- Needs APK V0.6.35 or newer (the browser and the save-to-phone copy are native code).
 
 ## Getting the project into GitLab
 Put the **contents** of the unzipped folder at the repository root, not the folder itself. `.gitlab-ci.yml` must sit at the root or the pipeline will not find `build.sh`, `www/` or `scripts/`. If `git status` shows a single folder like `bojack-secures-V0_6_xx/`, move its contents up one level.
